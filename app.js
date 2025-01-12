@@ -9,7 +9,8 @@ const PORT = process.env.PORT || 5000;
 // Determine allowed origin dynamically
 const allowedOrigins = [
   "http://localhost:3000", // Local development frontend
-  "https://your-frontend-url.vercel.app", // Replace with your Vercel frontend URL
+  "https://joygardens.vercel.app" // Your hosted frontend domain
+
 ];
 
 app.use(
