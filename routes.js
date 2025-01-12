@@ -2,6 +2,7 @@ const express = require("express");
 const cloudinary = require("./config");
 const router = express.Router();
 const fileUpload = require("express-fileupload");
+const mongoose = require("mongoose");
 
 // Cloudinary folder name
 const CLOUDINARY_FOLDER = process.env.CLOUDINARY_FOLDER || "joygardens";
@@ -94,6 +95,105 @@ router.delete("/media/:public_id", async (req, res) => {
     res.status(500).json({ message: "Failed to delete media" });
   }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+// Event Schema
+const eventSchema = new mongoose.Schema({
+  title: String,
+  description: String,
+  date: Date,
+  imageUrl: String, // To store the image URL
+});
+
+const Event = mongoose.model("Event", eventSchema);
+
+// Add Event with Image
+router.post("/events", async (req, res) => {
+  try {
+    const { title, description, date } = req.body;
+
+    if (!req.files || !req.files.image) {
+      return res.status(400).json({ message: "Image file is required." });
+    }
+
+    // Upload image to Cloudinary
+    const result = await cloudinary.uploader.upload(req.files.image.tempFilePath, {
+      folder: "joygardens/events",
+    });
+
+    // Create the event
+    const event = new Event({
+      title,
+      description,
+      date,
+      imageUrl: result.secure_url, // Store the image URL
+    });
+
+    await event.save();
+    res.status(201).json(event);
+  } catch (error) {
+    console.error("Error adding event:", error);
+    res.status(500).json({ message: "Failed to add event." });
+  }
+});
+
+// Get All Events
+router.get("/events", async (req, res) => {
+  try {
+    const events = await Event.find();
+    res.status(200).json(events);
+  } catch (error) {
+    console.error("Error fetching events:", error);
+    res.status(500).json({ message: "Failed to fetch events." });
+  }
+});
+
+// Update Event with Image
+router.put("/events/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, date } = req.body;
+
+    const updateData = { title, description, date };
+
+    if (req.files && req.files.image) {
+      // Upload new image if provided
+      const result = await cloudinary.uploader.upload(req.files.image.tempFilePath, {
+        folder: "joygardens/events",
+      });
+      updateData.imageUrl = result.secure_url;
+    }
+
+    const updatedEvent = await Event.findByIdAndUpdate(id, updateData, { new: true });
+    res.status(200).json(updatedEvent);
+  } catch (error) {
+    console.error("Error updating event:", error);
+    res.status(500).json({ message: "Failed to update event." });
+  }
+});
+
+// Delete Event
+router.delete("/events/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const event = await Event.findByIdAndDelete(id);
+    res.status(200).json({ message: "Event deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting event:", error);
+    res.status(500).json({ message: "Failed to delete event." });
+  }
+});
+
 
 
 module.exports = router;
