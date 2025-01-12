@@ -6,12 +6,28 @@ const cors = require("cors");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Configure CORS
-app.use(cors({
-  origin: "http://localhost:3000", // Replace with your frontend's origin
-  methods: "GET,POST,DELETE", // Allowed methods
-  allowedHeaders: "Content-Type,Authorization", // Allowed headers
-}));
+// Determine allowed origin dynamically
+const allowedOrigins = [
+  "http://localhost:3000", // Local development frontend
+  "https://your-frontend-url.vercel.app", // Replace with your Vercel frontend URL
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        const msg = "The CORS policy does not allow access from this origin.";
+        return callback(new Error(msg), false);
+      }
+    },
+    methods: "GET,POST,DELETE", // Allowed HTTP methods
+    allowedHeaders: "Content-Type,Authorization", // Allowed HTTP headers
+  })
+);
 
 // API Routes
 app.use("/api", routes);
